@@ -1,0 +1,16 @@
+#代码前面点一下会出现一个小红点，是断点，可以使用调试，一步一步运行，并且显示每一步的值
+#python定义变量时不需要指定类型
+
+name="小明"
+age=18
+sex="男"
+height=1.75
+weight=75.0
+gender=True #bool类型
+print(name,age,sex,height,weight)
+
+#bool类型数据 gender=True或gender=False 
+#字符串str引号  浮点型float 1.75  整形int 18  
+#复数型数据  complex   
+
+#非数字型数据类型    字符串、列表、元组、字典
