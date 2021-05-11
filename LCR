@@ -1,0 +1,94 @@
+import pyvisa
+import datetime
+import serial
+import threading
+
+exitFlag = 0
+
+Flag=False
+
+startT=datetime.datetime.now()
+#print(startT)
+def instrument_connection():
+    rm = pyvisa.ResourceManager('')
+    rm.list_resources()
+    #inst = rm.list_resources('USB0::0x0957::0x0909::MY46205006::0::INSTR')
+    my_instrument = rm.open_resource('USB0::0x0957::0x0909::MY46205006::0::INSTR')
+    my_instrument.read_termination = '\n'
+    my_instrument.write_termination = '\n'
+    my_instrument.timeout = 100000
+
+    return my_instrument
+def measurement(my_instrument):
+    my_instrument.write(':MEM:CLE DBUF')    #将内部数据缓冲存储器的数据保存到外部同时清除内部存储器数据
+    my_instrument.write(':DISP:PAGE MEAS')  #选择要显示的界面为MEAS DISPLAY
+    my_instrument.write(':INIT:CONT ')      #启动自动触发器，使状态从空闲状态变为等待触发状态
+    my_instrument.write(':DISP:PAGE LIST')  #选择要显示的界面，这里选的是列表界面
+    my_instrument.write(':FORM:DATA ASC')   #选择数据传送格式二进制或者ASCII，
+    #freq = frequency.freq_str(frequencies)
+    #my_instrument.write('LIST:FREQ ', freq) #列表频率设置，freq是自己设定的频率表
+   # my_instrument.write(':MMEM EXT')
+    #my_instrument.write(':MEM:DIM DBUF, ', str(len(frequencies)))
+    my_instrument.write(':MEM:FILL DBUF')   #启动数据缓冲存储器
+    consequence_list = []
+    dt = datetime.datetime.now()    #读取当前时间
+    consequence_list.append(dt-startT)
+    my_instrument.write(':TRIG:IMM')    #触发该单元
+    output_signals=my_instrument.query_ascii_values(':MEM:READ? DBUF')
+    consequence_list.append(output_signals)
+    dt2 = datetime.datetime.now()
+    consequence_list.append(dt2-startT)
+    return consequence_list
+
+def E4980A():
+    global Flag
+    if Flag == True:
+        #读取阻抗传感器的值并存储于文件中，读取阻抗传感器花时间多，放在线程
+        with open('LCR-master.txt', 'w', encoding='utf-8') as f:
+            for i in range(5):
+                data = measurement(instrument_connection())
+                for i in data:
+                    f.writelines(str(i))
+                    f.writelines("\n")
+        Flag=False
+#线程函数
+def thread_E4980A(arg):
+    E4980A()
+def stm32():
+    thread1 = threading.Thread(target=thread_E4980A, args=('This is thread E4980A',))
+    ser = serial.Serial()
+    ser.baudrate = 115200  # 设置波特率
+    #端口是COM5        如果是虚拟串口，创建的是一对，这里填了其中一个，那么串口助手那里要选择另外一个
+    ser.port = 'COM5'
+    # 打开串口
+    ser.open()
+    global Flag
+    # 给stm32发送任意指令
+    ser.write(1)
+    a = 1
+    data_list=[]
+    while (a):
+        # 判断是否接收到stm32发过来的数据
+        if ser.read():#不为空
+            Flag = True
+            # 开启新线程
+            thread1.start()
+            #当阻抗分析仪开始测量时Flag=True，当阻抗分析仪结束测量时Flag=False
+            #执行一个在阻抗分析仪测量期间的循环，读取期间的力传感器数据
+            while(Flag):
+                data_list.append(ser.readline())
+            #print(data_list)
+
+            #保存力传感器数据
+            fileObject = open('stm32.txt', 'w')
+            for j in data_list:
+                fileObject.write(str(j))
+                fileObject.write('\n')
+            fileObject.close()
+            a = 0
+        else:#为空
+            Flag = False
+            a = 0
+
+if __name__ == '__main__':
+    stm32()
