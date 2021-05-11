@@ -85,4 +85,16 @@ scale=0.1
 print('数据比例是%.2f%%'%（scale*10))
 #如果不加后面那个括号，会认为是字符串（引号内容）*10，就会输出10个数据比例是。。。 加上了之后，意思就是scale进行算术运算
 
+#6.关键字
+import keyword
+print(keyword.kwlist)
+['False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await', 'break', 'class', 'continue', 'def', 'del', 
+'elif', 'else', 'except', 'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'nonlocal', 
+'not', 'or', 'pass', 'raise', 'return', 'try', 'while', 'with', 'yield']
+
+#变量命名规则（区分大小写，见名知意）
+#两个或多个单词组成时，每个单词都用小写字母，单词与单词之间用下划线_连接 first_name
+#或者使用驼峰命名法，firstName、lastName、FirstName、LastName 都行
+
+
 
